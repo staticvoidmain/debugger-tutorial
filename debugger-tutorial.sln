@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "deadlock", "deadlock\deadlock.csproj", "{6AF3FA56-9409-461C-B379-AF3ADD3D488D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "runaway-threads", "runaway-threads\runaway-threads.csproj", "{0293995F-63BD-470E-94A2-979B2B4DC561}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "null-reference", "null-reference\null-reference.csproj", "{0C28CB0B-E5CD-48D0-9020-93F9F51AE5DA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AF3FA56-9409-461C-B379-AF3ADD3D488D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AF3FA56-9409-461C-B379-AF3ADD3D488D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AF3FA56-9409-461C-B379-AF3ADD3D488D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AF3FA56-9409-461C-B379-AF3ADD3D488D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0293995F-63BD-470E-94A2-979B2B4DC561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0293995F-63BD-470E-94A2-979B2B4DC561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0293995F-63BD-470E-94A2-979B2B4DC561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0293995F-63BD-470E-94A2-979B2B4DC561}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C28CB0B-E5CD-48D0-9020-93F9F51AE5DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C28CB0B-E5CD-48D0-9020-93F9F51AE5DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C28CB0B-E5CD-48D0-9020-93F9F51AE5DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C28CB0B-E5CD-48D0-9020-93F9F51AE5DA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
