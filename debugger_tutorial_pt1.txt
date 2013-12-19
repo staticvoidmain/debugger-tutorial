@@ -1,0 +1,284 @@
+Advanced Debugging:
+	- Setup (Not for the faint of heart)
+		- Disassember (JetBrains dotPeek or just plain old ILDASM.exe)
+		- Get a real console! Install Console2 or ConEmu
+		- Install Debugging Tools For Windows x86 to c:\dbg32
+		- (optional) Install Debugging Tools For Windows x64 to c:\dbg64		
+		- Install SysInternals tools to c:\dev\tools
+		- Git for Windows (http://git-scm.com/download/win)
+		- git clone http://github.com/staticvoidmian/debugger-tutorial.git into c:\advanced-dbg
+
+	- Command-Line Love
+		- Graphical user-interfaces are cool, but there is something to be said for the power of the command-line. This tutorial is performed entirely on the command 	line, so brush up on the basics.
+		- Command History: Key up / down to cycle through previous commands.
+		- Get Help: Most commands and tools will accept a /? or -? and provide examples of their correct usage.
+		- Pipe to File: use the > operator to pipe the output of a command to a new file.
+						use the >> operator to append command output to an existing file.
+		- Tab Completion: with most shells, you get tab completion. If you began typing C:\devel and hit tab, your terminal will auto-complete the word 'development'.
+
+	- Types of Debuggers
+		- There are three debuggers which come in the Debugging Tools For Windows toolkit. (okay, technically there are four, but I'm not covering the Kernel debugger.)
+		- Each one uses the same debugger engine (dbgeng.dll) and has more or less the same functionality.
+		- cdb / ntsd
+			- These are both command-line-interface debuggers.
+			- The only difference between cdb (Console Debugger) and ntsd (NT Symbolic Debugger) is that ntsd opens inside a new cmd.exe process, where cdb will run inside the current instance of cmd.
+			- cdb is the preferred debugger for this tutorial, as it will make use of our fancy new console emulators. Working with text is a lot nicer in Console2 than in cmd.exe.
+
+		- windbg
+			- WinDBG offers the same amount of detail as cdb/ntsd, however it provides a graphical user interface, instead of just a CLI.
+			- All cdb/ntsd commands can be invoked from WinDBG's command window.
+			- WinDBG adds a few things like exception filters, but it's mostly just for people who prefer menus to text commands.
+
+	- The documentation
+		- These debuggers are a bit of a well-kept secret. Reserved for the ultra-ninjas. There are a few PluralSight videos which go 
+		  into solid detail, but there aren't any free articles or blogs which offer good introductory tutorials.
+
+		  	* http://www.amazon.com/Advanced-NET-Debugging-Mario-Hewardt/dp/0321578899
+		  	* http://blogs.msdn.com/b/tess/archive/tags/debugging/
+
+		  	[Walkthrough + Examples by Tess Ferrandez]
+		  	* http://blogs.msdn.com/b/tess/archive/2008/02/04/net-debugging-demos-information-and-setup-instructions.aspx
+
+		- The native cbd commands are documented quite well in debugger.chm, which is included with Debugging Tools for Windows. To open it at any point
+		  during a debugging session, simply type .hh 
+
+	- Why command-line debuggers?
+		- Visual Studio offers a great many tools for managed debugging, and the experience is very user-friendly, so why resort to these prickly tools
+		from a forgotten era before the advent of the IDE?
+		 	- Smaller Footprint
+		 		- Both in terms of size-on-disk and memory consumption, the command line debugging tools are tiny compared to Visual Studio.
+
+		 	- XCopy Deployable 
+		 	 	- No installation necessary. Extract and go.
+
+		 	- Lower Level of Abstraction
+		 		- These debuggers deal at the native level, and as such, provide greater detail for tracking down more difficult problems.
+		 		- Seeing the execution of not only the managed execution of your code, but also the CLR Host can often provide key insights into what is happening
+		 		in your code.
+
+		 	- Greater Control
+		 		- These debuggers give you access to ALL the information that's available inside the process.
+		 			 - Command line arguments
+		 			 - Loaded modules (including the clr itself)
+		 			 - Threads (managed and unmanaged) and call-stacks
+
+		 	- Automation
+		 		- Script the interraction between debugger and debugee.
+		 			- Log the current call stack to a file each time a specific method is called.
+		 			- On-exception, check the current managed exception and perform a full process dump for later analysis.
+
+		 	- Extensibility
+		 		- There are many great extensions (such as SOS, SOSex and PSSCOR2) which allow the default debugger commands to be extended with new functionality.
+		 		- For example, SOS can instantly diagnose out-of-memory exceptions with the use of a single command (in the simple case).
+			
+			- You'll look like a wizard and/or ninja.
+
+	- Active Debugging
+		- Launching a process under the debugger.
+			- [cmd] cdb "Path to your executable"
+			- The initial breakpoint
+				- As the process launches, the debugger injects a break-point and allows for commands to be executed before continuing to launch.
+				- This initial break-point can sometimes be useful, but most of the debugger interractions (especially for managed code) are only valid 
+				  once modules start to be loaded later on.
+				- This breakpoint is useful for setting up exception filters or breakpoints.
+
+		- Attaching to a running process.
+			- You can also attach to a running process. Very useful for debugging a problem live in production. Some care must be taken
+			  since it is possible to lock the process or even cause it to terminate when running it under the debugger. There are a number of command
+			  line switches which control how the debugger attaches which I'll go into later when I talk about passive debugging.
+
+			- [cmd] cdb -p <pid>
+
+			- [note] Useful Arguments  
+				-G (ignore the final break point. useful for automation.)
+				-pd (automatically detach the debugger. Otherwise closing the debugger will close the process.)
+
+		- Deadlock
+			- Description: Okay, so this is totally contrived, but just go with me here. Imagine that these locks are in separate parts of the application and that
+			the application is more elaborate than just a console app. The same steps will be used.
+			
+			- Walkthrough:
+				- [cmd] 	cd c:\advanced-dbg\deadlock\bin\debug
+				- [cmd] 	cdb deadlock.exe
+				- [cmd] 	.symfix; g;
+				- [note] 	Notice the program halts after "Task-2 entered lock#1"
+				- [key] 	Press ctrl-c to break into the debugger.
+				- [cmd] 	.loadby sos clr
+				- [cmd] 	!threads
+				- [note] 	Notice that the Lock Count for two threads is set to 1 (looks interesting!)
+				- [note] 	Since we have symbols, lets get line information in our output.
+				- [cmd] 	.lines
+				- [note] 	let's find out which locks they're holding...
+				- [cmd]		!syncblk
+				- [note]	The CLR holds lock information in the SyncBlock structures.
+
+				Index 	SyncBlock 			MonitorHeld 	Recursion 	Owning 				Thread 			Info  			SyncBlock 			Owner
+			    6 		0000000000810b88    3         		1 			000000000081cfa0 	3cf4   			6   			0000000002642d70 	System.Object
+			    7 		0000000000810bd8    3         		1 			0000000000812400 	5d4   			4	   			0000000002642d88 	System.Object
+
+			    // aside: there are also more light-weight locks locks introduced in later versions of .net called ThinLocks, however this demo does not make use of them.
+			    // ( I hope that's always the case. Otherwise it's going to be rather confusing. I think the CLR is free to use ThinLocks if deemed appropriate )
+
+
+		- Complex NullRef in an expression (find the null thing!)
+			- problem: In production we have a large conditional expression, with several checks on a single line that is throwing a null reference exception.
+
+			The call-stack we get back looks like this: 
+
+				System.NullReferenceException: Object reference not set to an instance of an object.
+				   at null_reference.Program.Main(String[] args) in c:\dev\projects\debugger-tutorial\null-reference\Program.cs:line 14
+
+			That's great, we have symbols, so we even get a line number. Easy money, right? 
+			
+			Well, not quite... 
+
+			The line looks like this: 
+				if (root.Foo.Value == null || root.Bar.Value.ToString() == "foo" || root.Baz.Value != null)
+				{
+					Console.WriteLine("The code inside the block.");
+				}
+
+			So, what was null? How many different things could be null? I count 5.
+
+				* root
+				* root.Foo
+				* root.Bar
+				* root.Bar.Value
+				* root.Baz
+
+			Normally we could just run locally and attach the Visual Studio debugger, but since this is production, we might have a harder time. 
+
+			Perhaps the code has changed and you would have to revert your working copy back to an older version, or this bug only happens rarely 
+			in production and is not always reproducible by development. This dummy information for the demo was hard-coded by me, but imagine
+			it's coming from a database or a third-party.
+
+			Lets fire up the debugger.
+
+			- [cmd] cd c:\advanced-dbg\null-reference\bin\debug
+			- [cmd] cdb null-reference.exe
+			- [cmd] g
+			- [note] The debugger will automatically break when it encounters an Access Violation (The native version of a NullReferenceException). 
+			- [cmd] .symfix
+			- [cmd] .reload
+			- [cmd] .lines
+			- [cmd] .loadby sos clr
+			- [cmd] !clrstack
+			
+			OS Thread Id: 0x3fd0 (0)
+			Child SP       IP Call Site
+			0037edc4 003804ca null_reference.Program.ByAddingMoreLayers(some.other.module.SomeClass) [c:\dev\projects\debugger-tutorial\null-reference\Program.cs @ 32]
+			
+			^^ This is the current frame. The exception happened here ^^
+
+			0037ee00 0038043c null_reference.Program.MakeTheStackLookMoreImpressive(some.other.module.SomeClass) [c:\dev\projects\debugger-tutorial\null-reference\Program.cs @ 26]
+			0037ee10 0038009d null_reference.Program.Main(System.String[]) [c:\dev\projects\debugger-tutorial\null-reference\Program.cs @ 14]
+			0037efd4 5b7e2652 [GCFrame: 0037efd4]
+			
+			- [note] We can inspect locals and parameters with !clrstack -a
+
+			0024ee74 003904ca null_reference.Program.ByAddingMoreLayers(some.other.module.SomeClass) [c:\dev\projects\debugger-tutorial\null-reference\Program.cs @ 32]
+			    PARAMETERS:
+			        root (0x0037ede0) = 0x022023e4 << this is the parameter value. We can assume that this method is static since it does not have a "this" pointer.
+			    LOCALS:
+			        0x0037edec = 0x00000000
+
+			- [note] if we're feeling fancy we can disassemble this method to get down to the exact IL instruction which is throwing the AV exception.
+			- [cmd] !u 0038043c
+
+			...
+			003904be ff1508392c00    call    dword ptr ds:[2C3908h] (some.other.module.SomePropertyType.get_Value(), mdToken: 06000006)
+			003904c4 8945d8          mov     dword ptr [ebp-28h],eax
+			003904c7 8b4dd8          mov     ecx,dword ptr [ebp-28h]
+			>>> 003904ca 8b01            mov     eax,dword ptr [ecx]
+			003904cc 8b4028          mov     eax,dword ptr [eax+28h]
+			003904cf ff10            call    dword ptr [eax]
+			003904d1 8945d4          mov     dword ptr [ebp-2Ch],eax
+			003904d4 8b1534214b03    mov     edx,dword ptr ds:[34B2134h] ("foo")	
+			003904da 8b4dd4          mov     ecx,dword ptr [ebp-2Ch]
+			003904dd e89e253779      call    mscorlib_ni+0x2d2a80 (79702a80) (System.String.op_Equality(System.String, System.String), mdToken: 060002fd)
+			...
+
+			- [note] the '>>>' token denotes the current instruction. Dereference the address in the ecx register, and store it in the eax register.
+			- [note] using the 'r' debugger command we can display the current register values, and the current IL instruction.
+			- [cmd] r
+			
+			eax=00000000 ebx=0024efa4 ecx=00000000 edx=00000000 esi=024b23e4 edi=0024ee9c
+			eip=003904ca esp=0024ee74 ebp=0024eea8 iopl=0         nv up ei pl zr na pe nc
+			cs=0023  ss=002b  ds=002b  es=002b  fs=0053  gs=002b             efl=00010246
+			003904ca 8b01            mov     eax,dword ptr [ecx]  ds:002b:00000000=????????
+
+			
+			- [note] so, if we're attempting to read the pointer value from [ecx] which is 00000000, Uh oh... that's an illegal address... BOOM!
+			- [note] from the instructions, if we're clever, we can deduce that the AV exception was thrown somewhere between calling get_Value and comparing
+					 that value to the string literal "foo". We know which instruction that is!
+
+			- [note] if perhaps the method were more complex and we couldn't really make sense of the disassembled IL we could inspect the data values directly.
+			- [cmd] !do 0x024b23e4
+
+			Name:        some.other.module.SomeClass
+			MethodTable: 002c38a0
+			EEClass:     002c1338
+			Size:        20(0x14) bytes
+			File:        c:\dev\projects\debugger-tutorial\null-reference\bin\Debug\null-reference.exe
+			Fields:
+			      MT    Field   Offset                 Type VT     Attr    Value Name
+			002c392c  4000002        4 ....SomePropertyType  0 instance 024b23f8 <Foo>k__BackingField
+			002c392c  4000003        8 ....SomePropertyType  0 instance 024b2660 <Bar>k__BackingField
+			002c392c  4000004        c ....SomePropertyType  0 instance 024b266c <Baz>k__BackingField
+
+			- [note] We can brute-force this using the !do (dumpObj) command. Just try each of them.
+			- [cmd] !do 024b2660
+
+			Name:        some.other.module.SomePropertyType
+			MethodTable: 002c392c
+			EEClass:     002c1848
+			Size:        12(0xc) bytes
+			File:        c:\dev\projects\debugger-tutorial\null-reference\bin\Debug\null-reference.exe
+			Fields:
+			      MT    Field   Offset                 Type VT     Attr    Value Name
+			7982b350  4000001        4        System.Object  0 instance 00000000 <Value>k__BackingField
+
+			- [note] There we go. We found our null reference --> root.Bar.Value
+
+			- [note] okay, that was a bit involved. Now let's cheat.
+			- [cmd] .load sosex
+			- [cmd] !mdt -r 0x024b23e4
+
+			024b23e4 (some.other.module.SomeClass)
+			    <Foo>k__BackingField:024b23f8 (some.other.module.SomePropertyType)
+			        <Value>k__BackingField:024b2650 (BOXED System.DateTime) 2013/12/16 14:18:11.763 VALTYPE (MT=79828ecc, ADDR=024b2654)
+			    <Bar>k__BackingField:024b2660 (some.other.module.SomePropertyType)
+			        <Value>k__BackingField:NULL (System.Object)
+			    <Baz>k__BackingField:024b266c (some.other.module.SomePropertyType)
+			        <Value>k__BackingField:024b2678 (some.other.module.SomePropertyType)
+			            <RECURSIVE>
+		
+	- Passive Debugging
+		- This is essentially a term I made up. I don't know that you'll find it in any references. 
+		- I just wanted a way to logically distinguish between attaching to a live process interractively and "everything else".
+		- This includes scripting the debuggers and debugging dump files.
+
+		- Symbols
+			- Debugging requires symbolic information in order to proceed. Visual Studio pampers us by not forcing us to think about our symbols, but in a production environment the symbols may not be available.
+
+			// todo: elaborate more on this when I have time.
+
+		MySup Access Violation Crash Walkthrough
+
+			[cmd] cdb -z <path_to_dump>
+
+			[cmd] .symfix
+			[cmd] .reload
+			[cmd] .loadby sos clr
+			[cmd] !threads
+			[cmd] ~0s
+			[cmd] !pe
+			[cmd] !dumpheap -type System.Windows.Forms.ToolTip+ToolTipNativeWindow
+
+			// not much help here. We have lots of tooltips in the application.
+
+			[GROUP ACTIVITY]
+			// Lets try to determine the active control at the time of the crash.
+			// We can start with the main application and 
+			// recursively call !do, find the activeControl, take that address, and call !do on that.
+			// continue until activeControl is null
